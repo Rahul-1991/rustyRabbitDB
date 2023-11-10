@@ -5,7 +5,7 @@ import (
 	"goredis/store"
 )
 
-func LeftPush(commandArgList []string) string {
+func RightPush(commandArgList []string) string {
 	cacheData, exists := store.HashMap.Load(commandArgList[1])
 	var serializedCachedData []string
 	if exists {
@@ -16,9 +16,9 @@ func LeftPush(commandArgList []string) string {
 	}
 	var modifiedArray []string = make([]string, 0, len(serializedCachedData)+len(commandArgList)-2)
 	for i := 2; i < len(commandArgList); i++ {
-		modifiedArray = append([]string{commandArgList[i]}, modifiedArray...)
+		modifiedArray = append(modifiedArray, commandArgList[i])
 	}
-	modifiedArray = append(modifiedArray, serializedCachedData...)
+	modifiedArray = append(serializedCachedData, modifiedArray...)
 
 	// Serialize the array to JSON and store it as a string
 	serialized, _ := json.Marshal(modifiedArray)

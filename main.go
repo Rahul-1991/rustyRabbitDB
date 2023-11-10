@@ -32,6 +32,8 @@ func decodeRespString(reqStr string) string {
 			return command.Delete(commandArgList)
 		} else if commandArgList[0] == "LPUSH" {
 			return command.LeftPush(commandArgList)
+		} else if commandArgList[0] == "RPUSH" {
+			return command.RightPush(commandArgList)
 		}
 	}
 	return ""
