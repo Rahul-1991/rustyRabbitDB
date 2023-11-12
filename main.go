@@ -5,6 +5,8 @@ import (
 	command "goredis/commands"
 	parser "goredis/parser"
 	"goredis/server"
+	"goredis/store"
+	"goredis/utility"
 	"net"
 	"strings"
 )
@@ -14,26 +16,28 @@ func decodeRespString(reqStr string) string {
 		return parser.DecodeSimpleString(reqStr)
 	} else if strings.HasPrefix(reqStr, "*") {
 		var commandArgList []string = parser.DecodeArrayString(reqStr)
-		if commandArgList[0] == "GET" || commandArgList[0] == "get" {
+		if strings.ToLower(commandArgList[0]) == "get" {
 			return command.Get(commandArgList)
-		} else if commandArgList[0] == "SET" || commandArgList[0] == "set" {
+		} else if strings.ToLower(commandArgList[0]) == "set" {
 			return command.Set(commandArgList)
-		} else if commandArgList[0] == "PING" {
+		} else if strings.ToLower(commandArgList[0]) == "ping" {
 			return "PONG"
-		} else if commandArgList[0] == "ECHO" {
+		} else if strings.ToLower(commandArgList[0]) == "echo" {
 			return commandArgList[1]
-		} else if commandArgList[0] == "EXISTS" {
+		} else if strings.ToLower(commandArgList[0]) == "exists" {
 			return command.Exists(commandArgList)
-		} else if commandArgList[0] == "INCR" {
+		} else if strings.ToLower(commandArgList[0]) == "incr" {
 			return command.AtomicIncrement(commandArgList)
-		} else if commandArgList[0] == "DECR" {
+		} else if strings.ToLower(commandArgList[0]) == "decr" {
 			return command.AtomicDecrement(commandArgList)
-		} else if commandArgList[0] == "DEL" {
+		} else if strings.ToLower(commandArgList[0]) == "del" {
 			return command.Delete(commandArgList)
-		} else if commandArgList[0] == "LPUSH" {
+		} else if strings.ToLower(commandArgList[0]) == "lpush" {
 			return command.LeftPush(commandArgList)
-		} else if commandArgList[0] == "RPUSH" {
+		} else if strings.ToLower(commandArgList[0]) == "rpush" {
 			return command.RightPush(commandArgList)
+		} else if strings.ToLower(commandArgList[0]) == "save" {
+			return command.SaveOnDisk()
 		}
 	}
 	return ""
@@ -54,7 +58,6 @@ func handleClient(conn net.Conn) {
 		}
 
 		message := string(buffer[:bytesRead])
-		// fmt.Println("Received message", message)
 		decodedStr := decodeRespString(message)
 		// Echo the message back to the client
 		conn.Write([]byte(fmt.Sprintf("+%s\r\n", decodedStr)))
@@ -62,7 +65,10 @@ func handleClient(conn net.Conn) {
 }
 
 func main() {
-
+	newHashMap, err := utility.ReadFromRDB("backup.rdb")
+	if err == nil {
+		store.HashMap = newHashMap
+	}
 	listener := server.CreateTCPConnection()
 
 	for {
