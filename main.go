@@ -7,6 +7,7 @@ import (
 	"goredis/server"
 	"goredis/store"
 	"goredis/utility"
+	"io"
 	"net"
 	"strings"
 )
@@ -46,21 +47,37 @@ func decodeRespString(reqStr string) string {
 func handleClient(conn net.Conn) {
 	defer conn.Close()
 
-	// Buffer to read data from the client
-	buffer := make([]byte, 1024)
+	// Use a dynamic buffer to accumulate the data
+	var buffer []byte
+	tempBuffer := make([]byte, 1024)
 
 	for {
-		// Read data from the client
-		bytesRead, err := conn.Read(buffer)
+		// Read a chunk of data from the client
+		bytesRead, err := conn.Read(tempBuffer)
 		if err != nil {
-			fmt.Println("Connection closed.")
+			if err == io.EOF {
+				// Connection closed by the client
+				break
+			}
+			fmt.Println("Error reading from client:", err)
 			return
 		}
 
-		message := string(buffer[:bytesRead])
-		decodedStr := decodeRespString(message)
-		// Echo the message back to the client
-		conn.Write([]byte(fmt.Sprintf("+%s\r\n", decodedStr)))
+		// Append the received chunk to the buffer
+		buffer = append(buffer, tempBuffer[:bytesRead]...)
+
+		// Check if the message is complete (ending with "\r\n")
+		if len(buffer) >= 2 && buffer[len(buffer)-2] == '\r' && buffer[len(buffer)-1] == '\n' {
+			// Process the complete message (excluding "\r\n")
+			message := string(buffer[:len(buffer)-2])
+			decodedStr := decodeRespString(message)
+
+			// Echo the message back to the client
+			conn.Write([]byte(fmt.Sprintf("+%s\r\n", decodedStr)))
+
+			// Clear the buffer for the next message
+			buffer = nil
+		}
 	}
 }
 

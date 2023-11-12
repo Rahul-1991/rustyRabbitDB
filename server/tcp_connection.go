@@ -7,7 +7,7 @@ import (
 )
 
 func CreateTCPConnection() net.Listener {
-	address := "0.0.0.0:6379"
+	address := "0.0.0.0:6380"
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		fmt.Println("Error listening:", err)
