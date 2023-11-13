@@ -38,7 +38,8 @@ func decodeRespString(reqStr string) string {
 		} else if strings.ToLower(commandArgList[0]) == "rpush" {
 			return command.RightPush(commandArgList)
 		} else if strings.ToLower(commandArgList[0]) == "save" {
-			return command.SaveOnDisk()
+			go command.SaveOnDisk()
+			return "OK"
 		}
 	}
 	return ""
@@ -83,6 +84,7 @@ func handleClient(conn net.Conn) {
 
 func main() {
 	newHashMap, err := utility.ReadFromRDB("backup.rdb")
+	fmt.Println("Completed loading from last backup")
 	if err == nil {
 		store.HashMap = newHashMap
 	}

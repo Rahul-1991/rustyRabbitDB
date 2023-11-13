@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"goredis/store"
 	utils "goredis/utility"
 )
@@ -11,5 +12,6 @@ func SaveOnDisk() string {
 	if err != nil {
 		return "Error saving backup"
 	}
+	fmt.Println("Backup completed")
 	return "OK"
 }

@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"compress/gzip"
 	"encoding/gob"
 	"goredis/store"
 	"os"
@@ -23,7 +24,11 @@ func WriteToRDB(filename string, data map[string]store.CacheItem) error {
 	}
 	defer file.Close()
 
-	encoder := gob.NewEncoder(file)
+	// Create a gzip writer
+	gzipWriter := gzip.NewWriter(file)
+	defer gzipWriter.Close()
+
+	encoder := gob.NewEncoder(gzipWriter)
 	err = encoder.Encode(data)
 	if err != nil {
 		return err
@@ -39,7 +44,14 @@ func ReadFromRDB(filename string) (sync.Map, error) {
 	}
 	defer file.Close()
 
-	decoder := gob.NewDecoder(file)
+	// Create a gzip reader
+	gzipReader, err := gzip.NewReader(file)
+	if err != nil {
+		return sync.Map{}, err
+	}
+	defer gzipReader.Close()
+
+	decoder := gob.NewDecoder(gzipReader)
 	var copiedMap = make(map[string]store.CacheItem)
 	err = decoder.Decode(&copiedMap)
 	if err != nil {
